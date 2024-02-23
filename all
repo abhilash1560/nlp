@@ -1,0 +1,73 @@
+
+ 	--------------CFG---------------------------
+grammar1 = nltk.CFG.fromstring("""
+  S -> NP VP
+  VP -> V NP | V NP PP
+  PP -> P NP
+  V -> "saw" | "ate" | "walked"
+  NP -> "John" | "Mary" | "Bob" | Det N | Det N PP
+  Det -> "a" | "an" | "the" | "my"
+  N -> "man" | "dog" | "cat" | "telescope" | "park"
+  P -> "in" | "on" | "by" | "with"
+  """)
+ 	
+>>> sent = "Mary saw Bob".split()
+>>> rd_parser = nltk.RecursiveDescentParser(grammar1)
+>>> for tree in rd_parser.parse(sent):
+...      print(tree)
+(S (NP Mary) (VP (V saw) (NP Bob)))
+
+-------------------------------------------------------
+DOCUMENT PREPROCESS
+>>> def ie_preprocess(document):
+...    sentences = nltk.sent_tokenize(document) [1]
+...    sentences = [nltk.word_tokenize(sent) for sent in sentences] [2]
+...    sentences = [nltk.pos_tag(sent) for sent in sentences]
+----------------------------------------------------------------
+CHUNKING
+sentence = [("the", "DT"), ("little", "JJ"), ("yellow", "JJ"), [1]
+... ("dog", "NN"), ("barked", "VBD"), ("at", "IN"),  ("the", "DT"), ("cat", "NN")]
+
+>>> grammar = "NP: {<DT>?<JJ>*<NN>}" [2]
+
+>>> cp = nltk.RegexpParser(grammar) [3]
+>>> result = cp.parse(sentence) [4]
+>>> print(result) [5]
+(S
+  (NP the/DT little/JJ yellow/JJ dog/NN)
+  barked/VBD
+  at/IN
+  (NP the/DT cat/NN))
+>>> result.draw()
+-------------------------------------------------------------------
+EXPLORING TEXT CORPORA
+>>> cp = nltk.RegexpParser('CHUNK: {<V.*> <TO> <V.*>}')
+>>> brown = nltk.corpus.brown
+>>> for sent in brown.tagged_sents():
+...     tree = cp.parse(sent)
+...     for subtree in tree.subtrees():
+...         if subtree.label() == 'CHUNK': print(subtree)
+...
+(CHUNK combined/VBN to/TO achieve/VB)
+(CHUNK continue/VB to/TO place/VB)
+(CHUNK serve/VB to/TO protect/VB)
+(CHUNK wanted/VBD to/TO wait/VB)
+(CHUNK allowed/VBN to/TO place/VB)
+(CHUNK expected/VBN to/TO become/VB)
+...
+(CHUNK seems/VBZ to/TO overtake/VB)
+(CHUNK want/VB to/TO buy/VB)
+-------------------------------------------------------------------
+TREES
+>>> tree3 = nltk.Tree('VP', ['chased', tree2])
+>>> tree4 = nltk.Tree('S', [tree1, tree3])
+>>> print(tree4)
+--------------------------------------------------------------------
+RELATION EXTRACTION
+>>> IN = re.compile(r'.*\bin\b(?!\b.+ing)')
+>>> for doc in nltk.corpus.ieer.parsed_docs('NYT_19980315'):
+...     for rel in nltk.sem.extract_rels('ORG', 'LOC', doc,
+...                                      corpus='ieer', pattern = IN):
+...         print(nltk.sem.rtuple(rel))
+--------------------------------------------------------------------
+(S (NP Alice) (VP chased (NP the rabbit)))
